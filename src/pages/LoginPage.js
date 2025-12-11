@@ -23,7 +23,9 @@ function LoginPage() {
 
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('userEmail', email);
-
+      if (response.data.roles) {
+        localStorage.setItem('userRoles', JSON.stringify(response.data.roles));
+      }
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);

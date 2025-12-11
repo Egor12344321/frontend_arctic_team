@@ -11,6 +11,30 @@ function DashboardPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const navigate = useNavigate();
 
+  const isAdmin = () => {
+    try {
+      const rolesJson = localStorage.getItem('userRoles');
+      const roles = rolesJson ? JSON.parse(rolesJson) : [];
+      return roles.includes('ROLE_ADMIN');
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isLeader = () => {
+    try {
+      const rolesJson = localStorage.getItem('userRoles');
+      const roles = rolesJson ? JSON.parse(rolesJson) : [];
+      return roles.includes('ROLE_LEADER');
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const canCreateExpedition = () => {
+    return isAdmin() || isLeader();
+  };
+
   useEffect(() => {
     checkAuthAndLoadData();
   }, []);
@@ -91,6 +115,7 @@ function DashboardPage() {
     } finally {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('userEmail');
+      localStorage.removeItem('userRoles');
       navigate('/login');
     }
   };
@@ -109,7 +134,6 @@ function DashboardPage() {
         }
       );
       
-      // Обновляем список экспедиций
       await loadUserExpeditions();
       setShowCreateModal(false);
       
@@ -133,7 +157,6 @@ function DashboardPage() {
 
   return (
     <div className="container mt-4">
-      {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1>🏔️ Arctic Expedition Dashboard</h1>
@@ -142,13 +165,26 @@ function DashboardPage() {
           </p>
         </div>
         <div>
-          <button 
-            onClick={() => setShowCreateModal(true)}
-            className="btn btn-primary me-2"
-            title="Создать новую экспедицию"
-          >
-            + Новая экспедиция
-          </button>
+          {canCreateExpedition() && (
+            <button 
+              onClick={() => setShowCreateModal(true)}
+              className="btn btn-primary me-2"
+              title="Создать новую экспедицию"
+            >
+              + Новая экспедиция
+            </button>
+          )}
+          
+          {isAdmin() && (
+            <button 
+              onClick={() => navigate('/admin')}
+              className="btn btn-warning me-2"
+              title="Перейти в админ-панель"
+            >
+              👑 Админ-панель
+            </button>
+          )}
+          
           <button onClick={handleLogout} className="btn btn-outline-danger">
             Выйти
           </button>
@@ -167,7 +203,6 @@ function DashboardPage() {
         </div>
       )}
 
-      {/* Мои экспедиции как руководитель */}
       <div className="card mb-4">
         <div className="card-header bg-primary text-white">
           <h5 className="mb-0">
@@ -181,12 +216,14 @@ function DashboardPage() {
           {expeditions.asLeader.length === 0 ? (
             <div className="text-center py-4">
               <p className="text-muted">Вы еще не создавали экспедиции</p>
-              <button 
-                onClick={() => setShowCreateModal(true)}
-                className="btn btn-primary"
-              >
-                Создать первую экспедицию
-              </button>
+              {canCreateExpedition() && (
+                <button 
+                  onClick={() => setShowCreateModal(true)}
+                  className="btn btn-primary"
+                >
+                  Создать первую экспедицию
+                </button>
+              )}
             </div>
           ) : (
             <ExpeditionList 
@@ -198,7 +235,6 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* Мои экспедиции как участник */}
       <div className="card">
         <div className="card-header bg-success text-white">
           <h5 className="mb-0">
@@ -226,12 +262,13 @@ function DashboardPage() {
         </div>
       </div>
 
-      {/* Модальное окно создания экспедиции */}
-      <CreateExpeditionModal
-        show={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleCreateExpedition}
-      />
+      {canCreateExpedition() && (
+        <CreateExpeditionModal
+          show={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSubmit={handleCreateExpedition}
+        />
+      )}
     </div>
   );
 }
