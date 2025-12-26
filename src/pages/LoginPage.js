@@ -20,12 +20,17 @@ function LoginPage() {
         { email, password },
         { withCredentials: true } 
       );
-
+      console.log('=== RESPONSE RECEIVED ==='); // ← ДОБАВЬТЕ
+      console.log('=== RESPONSE RECEIVED ==='); // ← ДОБАВЬТЕ
+      console.log('Full response:', response.data);
+      console.log('userRoles exists?', 'userRoles' in response.data);
+      console.log('userRoles value:', response.data.userRoles);
+      console.log('Type of userRoles:', typeof response.data.userRoles);
       localStorage.setItem('accessToken', response.data.accessToken);
       localStorage.setItem('userEmail', email);
-      if (response.data.roles) {
-        localStorage.setItem('userRoles', JSON.stringify(response.data.roles));
-      }
+
+      localStorage.setItem('userRoles', JSON.stringify(response.data.userRoles));
+      
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);

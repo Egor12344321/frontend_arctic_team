@@ -3,12 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ExpeditionList from '../components/expeditions/ExpeditionList';
 import CreateExpeditionModal from '../components/expeditions/CreateExpeditionModal';
+import ManageParticipantsModal from '../components/expeditions/ManageParticipantsModal';
+import EditExpeditionModal from '../components/expeditions/EditExpeditionModal';
 
 function DashboardPage() {
   const [expeditions, setExpeditions] = useState({ asLeader: [], asParticipant: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showParticipantsModal, setShowParticipantsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedExpedition, setSelectedExpedition] = useState(null);
   const navigate = useNavigate();
 
   const isAdmin = () => {
@@ -73,7 +78,6 @@ function DashboardPage() {
           withCredentials: true
         }
       );
-      
       setExpeditions(response.data);
       setLoading(false);
     } catch (error) {
@@ -140,6 +144,138 @@ function DashboardPage() {
       return response.data;
     } catch (error) {
       console.error('Create expedition error:', error);
+      throw error;
+    }
+  };
+
+  const handleManageParticipants = (expedition) => {
+    console.log('Opening participants modal for expedition:', expedition);
+    setSelectedExpedition(expedition);
+    setShowParticipantsModal(true);
+  };
+
+  const handleEditExpedition = (expedition) => {
+    console.log('Opening edit modal for expedition:', expedition);
+    setSelectedExpedition(expedition);
+    setShowEditModal(true);
+  };
+
+  const handleUpdateExpedition = async (updatedData) => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/expeditions/${selectedExpedition.id}`,
+        updatedData,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        }
+      );
+      
+      await loadUserExpeditions();
+      setShowEditModal(false);
+      setSelectedExpedition(null);
+    } catch (error) {
+      console.error('Update expedition error:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteExpedition = async () => {
+    if (!window.confirm('Вы уверены, что хотите удалить экспедицию? Это действие нельзя отменить.')) {
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `http://localhost:8080/api/expeditions/${selectedExpedition.id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          withCredentials: true
+        }
+      );
+      
+      await loadUserExpeditions();
+      setShowEditModal(false);
+      setSelectedExpedition(null);
+    } catch (error) {
+      console.error('Delete expedition error:', error);
+      alert('Не удалось удалить экспедицию');
+    }
+  };
+
+  const handleAddParticipant = async (userId) => {
+    try {
+      await axios.post(
+        `http://localhost:8080/api/expeditions/${selectedExpedition.id}/participants`,
+        { userId },
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Add participant error:', error);
+      throw error;
+    }
+  };
+
+  const handleRemoveParticipant = async (participantId) => {
+    try {
+      await axios.delete(
+        `http://localhost:8080/api/expeditions/${selectedExpedition.id}/participants/${participantId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        }
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Remove participant error:', error);
+      throw error;
+    }
+  };
+
+  const handleSearchUser = async (individualNumber) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/users/search?individualNumber=${individualNumber}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const handleGetParticipants = async () => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/expeditions/${selectedExpedition.id}/participants`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          }
+        }
+      );
+      
+      return response.data;
+    } catch (error) {
       throw error;
     }
   };
@@ -230,6 +366,8 @@ function DashboardPage() {
               expeditions={expeditions.asLeader}
               showRole={false}
               onRefresh={loadUserExpeditions}
+              onManageParticipants={handleManageParticipants}
+              onEditExpedition={handleEditExpedition}
             />
           )}
         </div>
@@ -257,6 +395,8 @@ function DashboardPage() {
               expeditions={expeditions.asParticipant}
               showRole={false}
               onRefresh={loadUserExpeditions}
+              onManageParticipants={handleManageParticipants}
+              onEditExpedition={handleEditExpedition}
             />
           )}
         </div>
@@ -267,6 +407,35 @@ function DashboardPage() {
           show={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreateExpedition}
+        />
+      )}
+
+      {showParticipantsModal && selectedExpedition && (
+        <ManageParticipantsModal
+          show={showParticipantsModal}
+          onClose={() => {
+            setShowParticipantsModal(false);
+            setSelectedExpedition(null);
+          }}
+          expeditionId={selectedExpedition.id}
+          expeditionName={selectedExpedition.name}
+          onAddParticipant={handleAddParticipant}
+          onRemoveParticipant={handleRemoveParticipant}
+          onSearchUser={handleSearchUser}
+          onGetParticipants={handleGetParticipants}
+        />
+      )}
+
+      {showEditModal && selectedExpedition && (
+        <EditExpeditionModal
+          show={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedExpedition(null);
+          }}
+          expedition={selectedExpedition}
+          onUpdate={handleUpdateExpedition}
+          onDelete={handleDeleteExpedition}
         />
       )}
     </div>
