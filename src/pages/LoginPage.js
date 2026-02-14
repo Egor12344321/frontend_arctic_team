@@ -20,8 +20,6 @@ function LoginPage() {
         { email, password },
         { withCredentials: true } 
       );
-      console.log('=== RESPONSE RECEIVED ==='); // ← ДОБАВЬТЕ
-      console.log('=== RESPONSE RECEIVED ==='); // ← ДОБАВЬТЕ
       console.log('Full response:', response.data);
       console.log('userRoles exists?', 'userRoles' in response.data);
       console.log('userRoles value:', response.data.userRoles);

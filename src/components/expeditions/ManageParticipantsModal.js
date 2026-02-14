@@ -26,8 +26,10 @@ function ManageParticipantsModal({ show, onClose, expeditionId, expeditionName }
           }
         }
       );
+      console.log('Participants loaded:', response.data);
       setParticipants(response.data);
     } catch (error) {
+      console.error('Load participants error:', error);
       setError('Не удалось загрузить участников');
     } finally {
       setLoading(false);
@@ -85,11 +87,18 @@ function ManageParticipantsModal({ show, onClose, expeditionId, expeditionName }
   };
 
   const removeParticipant = async (participantId) => {
+    if (!participantId) {
+      console.error('participantId is undefined');
+      setError('Ошибка: ID участника не найден');
+      return;
+    }
+
     if (!window.confirm('Вы уверены, что хотите удалить участника из экспедиции?')) {
       return;
     }
 
     try {
+      console.log(`Deleting participant ${participantId} from expedition ${expeditionId}`);
       await axios.delete(
         `http://localhost:8080/api/expeditions/${expeditionId}/participants/${participantId}`,
         {
@@ -101,7 +110,8 @@ function ManageParticipantsModal({ show, onClose, expeditionId, expeditionName }
       await loadParticipants();
       setError('');
     } catch (error) {
-      setError('Не удалось удалить участника');
+      console.error('Delete error:', error);
+      setError(error.response?.data?.message || 'Не удалось удалить участника');
     }
   };
 
@@ -182,11 +192,11 @@ function ManageParticipantsModal({ show, onClose, expeditionId, expeditionName }
                 ) : (
                   <div className="list-group">
                     {participants.map(participant => (
-                      <div key={participant.id} className="list-group-item d-flex justify-content-between align-items-center">
+                      <div key={participant.participantId} className="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                          <strong>{participant.userFirstName} {participant.userLastName}</strong>
+                          <strong>{participant.user.firstName} {participant.user.lastName}</strong>
                           <div className="text-muted small">
-                            {participant.userEmail} • {participant.userIndividualNumber}
+                            {participant.user.email} • {participant.user.individualNumber}
                           </div>
                           <small className="text-muted">
                             Присоединился: {new Date(participant.joinedAt).toLocaleDateString()}
@@ -194,7 +204,7 @@ function ManageParticipantsModal({ show, onClose, expeditionId, expeditionName }
                         </div>
                         <button 
                           className="btn btn-outline-danger btn-sm"
-                          onClick={() => removeParticipant(participant.id)}
+                          onClick={() => removeParticipant(participant.participantId)}  // ← ИСПРАВЛЕНО!
                           title="Удалить из экспедиции"
                         >
                           ✕

@@ -1,8 +1,7 @@
-// src/components/expeditions/EditExpeditionModal.js
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
+function EditExpeditionModal({ show, onClose, expedition, onUpdate, onDelete }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -38,19 +37,9 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
     setError('');
 
     try {
-      await axios.put(
-        `http://localhost:8080/api/expeditions/${expedition.id}`,
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      
-      onUpdate();
-      onClose();
+      // onUpdate - это handleUpdateExpedition, который делает PUT
+      await onUpdate(formData);
+      // Модалка закроется в DashboardPage после успешного обновления
     } catch (error) {
       setError(error.response?.data?.message || 'Ошибка при обновлении экспедиции');
     } finally {
@@ -65,18 +54,12 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
     }
 
     try {
-      await axios.delete(
-        `http://localhost:8080/api/expeditions/${expedition.id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          }
-        }
-      );
-      
-      onUpdate();
-      onClose();
+      // onDelete - это handleDeleteExpedition, который делает DELETE
+      await onDelete();
+      // Модалка закроется в DashboardPage после успешного удаления
+      // Не нужно вызывать onClose() здесь, это сделает DashboardPage
     } catch (error) {
+      console.error('Delete error:', error);
       setError('Не удалось удалить экспедицию');
       setDeleteConfirm(false);
     }
@@ -90,7 +73,12 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
         <div className="modal-content">
           <div className="modal-header">
             <h5 className="modal-title">✏️ Редактировать экспедицию</h5>
-            <button type="button" className="btn-close" onClick={onClose}></button>
+            <button 
+              type="button" 
+              className="btn-close" 
+              onClick={onClose}
+              disabled={loading}
+            ></button>
           </div>
           
           <form onSubmit={handleSubmit}>
@@ -106,6 +94,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                   value={formData.name}
                   onChange={handleChange}
                   required
+                  disabled={loading}
                 />
               </div>
               
@@ -117,6 +106,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                   rows="3"
                   value={formData.description}
                   onChange={handleChange}
+                  disabled={loading}
                 />
               </div>
               
@@ -130,6 +120,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                     value={formData.startDate}
                     onChange={handleChange}
                     required
+                    disabled={loading}
                   />
                 </div>
                 
@@ -142,6 +133,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                     value={formData.endDate}
                     onChange={handleChange}
                     required
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -155,6 +147,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                       type="button" 
                       className="btn btn-outline-danger"
                       onClick={handleDelete}
+                      disabled={loading}
                     >
                       🗑️ Удалить экспедицию
                     </button>
@@ -164,6 +157,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                         type="button" 
                         className="btn btn-danger"
                         onClick={handleDelete}
+                        disabled={loading}
                       >
                         ✅ Подтвердить удаление
                       </button>
@@ -171,6 +165,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                         type="button" 
                         className="btn btn-secondary"
                         onClick={() => setDeleteConfirm(false)}
+                        disabled={loading}
                       >
                         Отмена
                       </button>
@@ -183,6 +178,7 @@ function EditExpeditionModal({ show, onClose, expedition, onUpdate }) {
                     type="button" 
                     className="btn btn-secondary me-2" 
                     onClick={onClose}
+                    disabled={loading}
                   >
                     Отмена
                   </button>

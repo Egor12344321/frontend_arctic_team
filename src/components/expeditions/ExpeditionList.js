@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';  // Добавь этот импорт!
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 function ExpeditionList({ expeditions, showRole = true, onRefresh, onManageParticipants, onEditExpedition }) {
-  const navigate = useNavigate();  // Теперь это определено
+  const navigate = useNavigate();
   const [actionLoading, setActionLoading] = useState(null);
 
   const isLeader = (expedition) => {
@@ -14,19 +14,35 @@ function ExpeditionList({ expeditions, showRole = true, onRefresh, onManageParti
     return new Date(dateString).toLocaleDateString('ru-RU');
   };
 
-  const handleManageParticipants = (expedition) => {
+  const handleExpeditionClick = (expedition) => {
+    console.log('Clicked expedition:', expedition.id, 'Role:', expedition.role);
+    
+    if (expedition.role === 'LEADER') {
+      // Для руководителя - участники
+      navigate(`/expeditions/${expedition.id}/participants`);
+    } else {
+      // Для участника - метрики
+      navigate(`/expeditions/${expedition.id}/my-metrics`);
+    }
+  };
+
+  const handleManageParticipants = (expedition, e) => {
+    e.stopPropagation(); // Останавливаем всплытие
     if (onManageParticipants) {
       onManageParticipants(expedition);
     }
   };
 
-  const handleEditExpedition = (expedition) => {
+  const handleEditExpedition = (expedition, e) => {
+    e.stopPropagation(); // Останавливаем всплытие
     if (onEditExpedition) {
       onEditExpedition(expedition);
     }
   };
 
-  const handleLeaveExpedition = async (expeditionId) => {
+  const handleLeaveExpedition = async (expeditionId, e) => {
+    e.stopPropagation(); // Останавливаем всплытие
+    
     if (!window.confirm('Вы уверены, что хотите покинуть экспедицию?')) {
       return;
     }
@@ -38,8 +54,7 @@ function ExpeditionList({ expeditions, showRole = true, onRefresh, onManageParti
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-          },
-          withCredentials: true
+          }
         }
       );
       
@@ -63,7 +78,12 @@ function ExpeditionList({ expeditions, showRole = true, onRefresh, onManageParti
   return (
     <div className="list-group">
       {expeditions.map(expedition => (
-        <div key={expedition.id} className="list-group-item">
+        <div 
+          key={expedition.id} 
+          className="list-group-item list-group-item-action"
+          onClick={() => handleExpeditionClick(expedition)}
+          style={{ cursor: 'pointer' }}
+        >
           <div className="d-flex justify-content-between align-items-start">
             <div className="flex-grow-1">
               <h5 className="mb-1">{expedition.name}</h5>
@@ -93,20 +113,12 @@ function ExpeditionList({ expeditions, showRole = true, onRefresh, onManageParti
               </div>
             </div>
             
-            <div className="d-flex flex-column gap-2 ms-3">
-              <button 
-                className="btn btn-outline-primary btn-sm"
-                onClick={() => navigate(`/expeditions/${expedition.id}`)}
-                title="Просмотреть детали"
-              >
-                📊 Детали
-              </button>
-              
+            <div className="d-flex flex-column gap-2 ms-3" onClick={e => e.stopPropagation()}>
               {isLeader(expedition) ? (
                 <>
                   <button 
                     className="btn btn-outline-success btn-sm"
-                    onClick={() => handleManageParticipants(expedition)}
+                    onClick={(e) => handleManageParticipants(expedition, e)}
                     title="Управление участниками"
                   >
                     👥 Участники
@@ -114,7 +126,7 @@ function ExpeditionList({ expeditions, showRole = true, onRefresh, onManageParti
                   
                   <button 
                     className="btn btn-outline-warning btn-sm"
-                    onClick={() => handleEditExpedition(expedition)}
+                    onClick={(e) => handleEditExpedition(expedition, e)}
                     title="Редактировать экспедицию"
                   >
                     ✏️ Редактировать
@@ -123,7 +135,7 @@ function ExpeditionList({ expeditions, showRole = true, onRefresh, onManageParti
               ) : (
                 <button 
                   className="btn btn-outline-danger btn-sm"
-                  onClick={() => handleLeaveExpedition(expedition.id)}
+                  onClick={(e) => handleLeaveExpedition(expedition.id, e)}
                   disabled={actionLoading === expedition.id}
                   title="Покинуть экспедицию"
                 >

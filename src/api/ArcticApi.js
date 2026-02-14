@@ -81,7 +81,13 @@ export const expeditionApi = {
     api.get(`/expeditions/${expeditionId}/participants`),
   
   addParticipant: (expeditionId, individualNumber) =>
-    api.post(`/expeditions/${expeditionId}/participants`, { individualNumber })
+    api.post(`/expeditions/${expeditionId}/participants`, { individualNumber }),
+
+  deleteExpedition: (expeditionId) =>
+    api.delete(`/expeditions/${expeditionId}`),
+  
+  editExpedition: (expeditionId, data) =>
+    api.put(`/expeditions/${expeditionId}`, data)
 };
 
 export default api;
